@@ -17,7 +17,7 @@
 % this step is not needed as a grid is already formed.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-function [cadat] = ca_register_vel_to_stl_v2(cadat)
+function [cadat] = ca_register_vel_to_stl_v3(cadat)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% COMPARE STL AND VELOCITY FIELD DATA, FLIP DATA AS NECESSARY
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -62,7 +62,7 @@ for vnum = cadat.TIME.ts:1:cadat.TIME.te
     else
         % If STB is used, load the mat file, make it the filtered velocity
         % because there is no need to remove zeros
-        A = load([cadat.DIR.velfiles,cadat.FILE.basename,num2str(vnum,'%05i'),'.mat']);
+        A = load([cadat.DIR.velfiles,cadat.FILE.basename,num2str(vnum,'%06i'),'.mat']);
         cadat.DATA.x = A.x;
         cadat.DATA.y = A.y;
         cadat.DATA.z = A.z;
@@ -113,10 +113,13 @@ for vnum = cadat.TIME.ts:1:cadat.TIME.te
     cadat.DATA.Ylc = cadat.DATA.Yl - 0.5*(max(cadat.DATA.Yl) + min(cadat.DATA.Yl));
     cadat.DATA.Zlc = cadat.DATA.Zl - 0.5*(max(cadat.DATA.Zl) + min(cadat.DATA.Zl));
     
-    % Save the center values
-    cadat.DATA.centvalX = 0.5*(max(cadat.DATA.Xl) + min(cadat.DATA.Xl));
-    cadat.DATA.centvalY = 0.5*(max(cadat.DATA.Yl) + min(cadat.DATA.Yl));
-    cadat.DATA.centvalZ = 0.5*(max(cadat.DATA.Zl) + min(cadat.DATA.Zl));
+    % Save the center values for the first time step - this must be the
+    % time step used for the shifting
+    if vnum == cadat.TIME.ts
+        cadat.DATA.centvalX = 0.5*(max(cadat.DATA.Xl) + min(cadat.DATA.Xl));
+        cadat.DATA.centvalY = 0.5*(max(cadat.DATA.Yl) + min(cadat.DATA.Yl));
+        cadat.DATA.centvalZ = 0.5*(max(cadat.DATA.Zl) + min(cadat.DATA.Zl));
+    end
 
     % Create grid
     [cadat.DATA.X,cadat.DATA.Y,cadat.DATA.Z] = meshgrid(cadat.DATA.Xlc,cadat.DATA.Ylc,cadat.DATA.Zlc);
@@ -143,6 +146,7 @@ for vnum = cadat.TIME.ts:1:cadat.TIME.te
         cadat.DATA.W(rind,cind,zind) = cw;
 
     end
+    
     fprintf('completed successfully')
 
     %%% LOAD IN STL POINT DATA %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -963,7 +967,8 @@ for vnum = cadat.TIME.ts:1:cadat.TIME.te
         stl_z = fp.stl_z;
         fprintf('completed successfully')
     end
-
+    
+    
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %% FIND OR IMPORT OPTIMAL SHIFT FOR REGISTRATION
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -988,25 +993,26 @@ for vnum = cadat.TIME.ts:1:cadat.TIME.te
         figure(60); subplot(3,3,1); imagesc(cadat.STL.maskf(:,:,plt_z_plane)); colormap gray;
         set(gca,'FontSize',14); title('STL -  Z = 0')
         subplot(3,3,2); imagesc(cadat.DATA.VelMaskf(:,:,plt_z_plane)); colormap gray; set(gca,'FontSize',14); title('Data -  Z = 0')
-        subplot(3,3,3); imagesc(cadat.DATA.VelMaskf(:,:,plt_z_plane-2)); colormap gray; set(gca,'FontSize',14); title('Data -  Z = -2')
-        subplot(3,3,4); imagesc(cadat.DATA.VelMaskf(:,:,plt_z_plane-4)); colormap gray; set(gca,'FontSize',14); title('Data -  Z = -4')
-        subplot(3,3,5); imagesc(cadat.DATA.VelMaskf(:,:,plt_z_plane-6)); colormap gray; set(gca,'FontSize',14); title('Data -  Z = -6')
-        subplot(3,3,6); imagesc(cadat.DATA.VelMaskf(:,:,plt_z_plane-8)); colormap gray; set(gca,'FontSize',14); title('Data -  Z = -8')
-        subplot(3,3,7); imagesc(cadat.DATA.VelMaskf(:,:,plt_z_plane+2)); colormap gray; set(gca,'FontSize',14); title('Data -  Z = +2')
-        subplot(3,3,8); imagesc(cadat.DATA.VelMaskf(:,:,plt_z_plane+4)); colormap gray; set(gca,'FontSize',14); title('Data -  Z = +4')
-        subplot(3,3,9); imagesc(cadat.DATA.VelMaskf(:,:,plt_z_plane+6)); colormap gray; set(gca,'FontSize',14); title('Data -  Z = +6')
+        subplot(3,3,3); imagesc(cadat.DATA.VelMaskf(:,:,plt_z_plane+2)); colormap gray; set(gca,'FontSize',14); title('Data -  Z = -2')
+        subplot(3,3,4); imagesc(cadat.DATA.VelMaskf(:,:,plt_z_plane+4)); colormap gray; set(gca,'FontSize',14); title('Data -  Z = -4')
+        subplot(3,3,5); imagesc(cadat.DATA.VelMaskf(:,:,plt_z_plane+6)); colormap gray; set(gca,'FontSize',14); title('Data -  Z = -6')
+        subplot(3,3,6); imagesc(cadat.DATA.VelMaskf(:,:,plt_z_plane+8)); colormap gray; set(gca,'FontSize',14); title('Data -  Z = -8')
+        subplot(3,3,7); imagesc(cadat.DATA.VelMaskf(:,:,plt_z_plane-2)); colormap gray; set(gca,'FontSize',14); title('Data -  Z = +2')
+        subplot(3,3,8); imagesc(cadat.DATA.VelMaskf(:,:,plt_z_plane-4)); colormap gray; set(gca,'FontSize',14); title('Data -  Z = +4')
+        subplot(3,3,9); imagesc(cadat.DATA.VelMaskf(:,:,plt_z_plane-6)); colormap gray; set(gca,'FontSize',14); title('Data -  Z = +6')
         z_guess = input(prompt_z);
         
         % Set search vectors based on guesses
-        x_srch = x_guess-7:1:x_guess+7;
-        y_srch = y_guess-7:1:y_guess+7;
-        z_srch = z_guess-7:1:z_guess+7;
+        x_srch = x_guess-5:1:x_guess+5;
+        y_srch = y_guess-5:1:y_guess+5;
+        z_srch = z_guess-5:1:z_guess+5;
         
         % Initialize output and counters
         srch_pts = zeros(length(y_srch),length(x_srch),length(z_srch));
         num_srch_pts = size(srch_pts,1)*size(srch_pts,2)*size(srch_pts,3);
         iter = 1;
         prev_mark = 0;
+        %%% FIND OPTIMAL TRANSLATION %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         fprintf('Searching using guess (%i, %i, %i)...',x_guess, y_guess, z_guess)
         tic
         for xd = 1:1:length(x_srch)
@@ -1052,7 +1058,7 @@ for vnum = cadat.TIME.ts:1:cadat.TIME.te
                     else
                         vel_shifted = vel_xshift;
                     end
-
+                    
                     % Determine number of overlapping points at displacement
                     num_non0_pts = vel_shifted.*cadat.STL.maskf;
                     srch_pts(yd,xd,zd) = sum(num_non0_pts(:))/(size(vel_shifted,1)*size(vel_shifted,2)*size(vel_shifted,3));
@@ -1067,7 +1073,7 @@ for vnum = cadat.TIME.ts:1:cadat.TIME.te
                     if iter == 1
                         testimate = round(num_srch_pts*tval);
                         testimate_hr = floor(testimate/(60*60));
-                        testimate_min = floor(testimate/60);
+                        testimate_min = floor((testimate-testimate_hr*60*60)/60);
                         testimate_sec = testimate - (testimate_hr*60*60 + testimate_min*60);
                         fprintf('\nEstimated time to complete: %02i:%02i:%02i \n',testimate_hr,testimate_min,testimate_sec)
                         fprintf('Percent Completed: ')
@@ -1084,20 +1090,232 @@ for vnum = cadat.TIME.ts:1:cadat.TIME.te
         y_opt = myind;
         x_opt = mxind(myind);
         z_opt = mzind(y_opt,x_opt);
+        % Collect the center values
+        centvalX = cadat.DATA.centvalX;
+        centvalY = cadat.DATA.centvalY;
+        centvalZ = cadat.DATA.centvalZ;
         
-        % Save optimal shift
-        save([cadat.DIR.savefiles,cadat.SHIFT.optshiftfile],'x_opt','y_opt','z_opt','x_srch','y_srch','z_srch');
+        % Save optimal shift as well as the center values used for it
+        save([cadat.DIR.savefiles,cadat.SHIFT.optshiftfile],'x_opt','y_opt','z_opt','x_srch','y_srch','z_srch','centvalX','centvalY','centvalZ');
         
         % Save optimal shift in cadat structure for further calculations
         cadat.DATA.YRshift = y_srch(y_opt);
         cadat.DATA.XRshift = x_srch(x_opt);
         cadat.DATA.ZRshift = z_srch(z_opt);
+        
+        
+        %%% FIND OPTIMAL ROTATION %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        % Rotation guesses
+        rot_x_theta = 8;
+        rot_y_theta = 0;
+        rot_z_theta = 1;
+        
+        % Create X,Y,Z matrices
+        [Xsr,Ysr,Zsr] = meshgrid(stl_x,stl_y,stl_z);
+        % Reshape matrices into line
+        Xsr_l = transpose(reshape(Xsr,[size(Xsr,1)*size(Xsr,2)*size(Xsr,3),1,1]));
+        Ysr_l = transpose(reshape(Ysr,[size(Xsr,1)*size(Xsr,2)*size(Xsr,3),1,1]));
+        Zsr_l = transpose(reshape(Zsr,[size(Xsr,1)*size(Xsr,2)*size(Xsr,3),1,1]));
+        
+        % Convert the x, y, z coordinates based on the shift,
+        % centering, and conversion to stl coordinates
+        % Center coordinates
+        xc = Xsr_l;% - centvalX;
+        yc = Ysr_l;% - centvalY;
+        zc = Zsr_l;% - centvalZ;
+        
+        % Adjust based on shift
+        Xsr_lc = xc + cadat.DATA.XRshift*cadat.STL.dx;
+        Ysr_lc = yc + cadat.DATA.YRshift*cadat.STL.dy;
+        Zsr_lc = zc + cadat.DATA.ZRshift*cadat.STL.dz;
+        
+        
+        % Adjust the points based on the optimal mask
+        % Reshape the mask into a line
+        dmask_l = transpose(reshape(cadat.DATA.VelMaskf,[size(Xsr,1)*size(Xsr,2)*size(Xsr,3),1]));
+        % Keep only the non-zero points
+        kp_inds = (dmask_l>0);
+        Xsr_lf = Xsr_l(kp_inds==1);
+        Ysr_lf = Ysr_l(kp_inds==1);
+        Zsr_lf = Zsr_l(kp_inds==1);
+        Xsr_lcf = Xsr_lc(kp_inds==1);
+        Ysr_lcf = Ysr_lc(kp_inds==1);
+        Zsr_lcf = Zsr_lc(kp_inds==1);
+        
+        % Subsample the points to be around 2000
+        sub_size = floor(length(Zsr_lf)/2000);
+        Xsr_lfss = Xsr_lcf(1:sub_size:end);
+        Ysr_lfss = Ysr_lcf(1:sub_size:end);
+        Zsr_lfss = Zsr_lcf(1:sub_size:end);
+        
+        % Plot the STL and scatter plots
+        stl_mask = cadat.STL.maskf;
+        figure(32); close(gcf);
+        figure(32);
+        vv = double(stl_mask > 0);
+        p2 = patch(isosurface(Xsr,Ysr,Zsr,vv,0));
+        p2.FaceColor = [0.7 0.7 0.7];
+        p2.EdgeColor = 'none';
+        p2.FaceAlpha = 0.2;
+        hold on; scatter3(Xsr_lf,Ysr_lf,Zsr_lf,3,'filled')
+        scatter3(Xsr_lcf,Ysr_lcf,Zsr_lcf,3,'filled')
+        pause(1E-3);
+        
+        % Need to center the XYZ points
+        medX = median(Xsr_lfss);
+        medY = median(Ysr_lfss);
+        medZ = median(Zsr_lfss);
+        Xsr_lfssc = Xsr_lfss - medX;
+        Ysr_lfssc = Ysr_lfss - medY;
+        Zsr_lfssc = Zsr_lfss - medZ;
+        
+        cXYZ = [Xsr_lfssc;Ysr_lfssc;Zsr_lfssc];
+        % Initialze teh output
+        rotSrch = zeros(length(rot_y_theta),length(rot_x_theta),length(rot_z_theta));
+        iter = 1; prev_mark = 0;
+        num_srch_pts = size(rotSrch,1)*size(rotSrch,2)*size(rotSrch,3);
+        fprintf('\nSearching optimal rotation...')
+        tic
+        for qx = 1:1:length(rot_x_theta)
+            for qy = 1:1:length(rot_y_theta)
+                for qz = 1:1:length(rot_z_theta)
+                    %%% Complete rotations of data %%%%%%%%%%%%%%%%%%%%%%%%
+                    % X rotation
+                    thetaX = rot_x_theta(qx);
+                    % Get the X rotation matrix
+                    rotmat = rotx(thetaX);
+                    % Administer the X rotation
+                    cXYZ_rotX = rotmat*cXYZ;
+
+                    thetaY = rot_y_theta(qy);
+                    % Get the X rotation matrix
+                    rotmat = roty(thetaY);
+                    % Administer the Y rotation
+                    cXYZ_rotXY = rotmat*cXYZ_rotX;
+
+                    thetaZ = rot_z_theta(qz);
+                    % Get the Z rotation matrix
+                    rotmat = rotz(thetaZ);
+                    % Administer the Z rotation
+                    cXYZ_rotXYZ = rotmat*cXYZ_rotXY;
+
+                    % Find how many points are in the mask after the
+                    % rotation
+                    num_non_zero_pts = 0;
+                    for cpt = 1:1:size(cXYZ_rotXYZ,2)
+                        % Get the current X,Y,Z
+                        currX = cXYZ_rotXYZ(1,cpt);
+                        currY = cXYZ_rotXYZ(2,cpt);
+                        currZ = cXYZ_rotXYZ(3,cpt);
+                        % Find the nearest point on the
+                        % rotated X,Y,Z coordinates
+                        pt_dist = sqrt((Xsr-currX).^2 + (Ysr-currY).^2 + (Zsr-currZ).^2);
+                        [minDist,minZ] = min(pt_dist,[],3);
+                        [minMat,minX] = min(minDist,[],2);
+                        [minPt,minY] = min(minMat);
+                        % Get the minimum indices
+                        indY = minY;
+                        indX = minX(indY);
+                        indZ = minZ(indY,indX);
+                        % Place the correct value in
+                        % the current index of the
+                        % shifted matrix
+                        inMask = cadat.STL.maskf(indY,indX,indZ);
+                        if inMask
+                            num_non_zero_pts = num_non_zero_pts + 1;
+                        end
+                    end
+                    % Get a percent of non-zero points in mask
+                    perc_non_zero = 100*(num_non_zero_pts/size(cXYZ_rotXYZ,2));
+                    % Save the number of non-zero points
+                    rotSrch(qy,qx,qz) = perc_non_zero;
+                    
+                    % Print the percent completed for steps of 10
+                    perc_complete = floor(100*iter/num_srch_pts);
+                    if (mod(perc_complete,10) == 0) && (perc_complete ~= prev_mark)
+                        fprintf(' %i%%',perc_complete)
+                        prev_mark = perc_complete;
+                    end
+                    if iter == 1
+                        tval = toc;
+                        testimate = round(num_srch_pts*tval);
+                        testimate_hr = floor(testimate/(60*60));
+                        testimate_min = floor((testimate-testimate_hr*60*60)/60);
+                        testimate_sec = testimate - (testimate_hr*60*60 + testimate_min*60);
+                        fprintf('\nEstimated time to complete: %02i:%02i:%02i \n',testimate_hr,testimate_min,testimate_sec)
+                        fprintf('Percent Completed: ')
+                    end
+                    iter = iter + 1;
+                    
+                end
+            end
+        end
+        [msrch,mqzind] = max(rotSrch,[],3);
+        [msrch,mqxind] = max(msrch,[],2);
+        [msrch,mqyind] = max(msrch);
+        qy_opt = mqyind;
+        qx_opt = mqxind(qy_opt);
+        qz_opt = mqzind(qy_opt,qx_opt);
+        
+        rot_optX = 0;%rot_x_theta(qx_opt);
+        rot_optY = 0;%rot_y_theta(qy_opt);
+        rot_optZ = 0;%rot_z_theta(qz_opt);     
+        
+        % Plot the STL and scatter plots to ensure it is the correct
+        % rotation
+        % X rotation
+        % Get the X rotation matrix
+        rotmat = rotx(rot_optX);
+        % Administer the X rotation
+        cXYZ_rotX = rotmat*cXYZ;
+        % Get the X rotation matrix
+        rotmat = roty(rot_optY);
+        % Administer the Y rotation
+        cXYZ_rotXY = rotmat*cXYZ_rotX;
+        % Get the Z rotation matrix
+        rotmat = rotz(rot_optZ);
+        % Administer the Z rotation
+        cXYZ_rotXYZ = rotmat*cXYZ_rotXY;
+        
+        stl_mask = cadat.STL.maskf;
+        figure(33); close(gcf);
+        figure(33);
+        vv = double(stl_mask > 0);
+        p2 = patch(isosurface(Xsr,Ysr,Zsr,vv,0));
+        p2.FaceColor = [0.7 0.7 0.7];
+        p2.EdgeColor = 'none';
+        p2.FaceAlpha = 0.2;
+        hold on; %scatter3(Xsr_lfss,Ysr_lfss,Zsr_lfss,3,'filled');
+        scatter3(cXYZ_rotXYZ(1,:)+medX,cXYZ_rotXYZ(2,:)+medY,cXYZ_rotXYZ(3,:)+medZ,3,'filled');
+        pause(1E-3);
+
+        save([cadat.DIR.savefiles,cadat.SHIFT.optrotfile],'rot_optX','rot_optY','rot_optZ','medX','medY','medZ');
+        
+        % Get the median and rotation values
+        cadat.DATA.rot_optX = rot_optX;
+        cadat.DATA.rot_optY = rot_optY;
+        cadat.DATA.rot_optZ = rot_optZ;
+        cadat.DATA.medX = medX;
+        cadat.DATA.medY = medY;
+        cadat.DATA.medZ = medZ;
     else
         fprintf('\nImporting optimal shift values...')
         fp = load([cadat.DIR.savefiles,cadat.SHIFT.optshiftfile]);
         cadat.DATA.XRshift = fp.x_srch(fp.x_opt);
         cadat.DATA.YRshift = fp.y_srch(fp.y_opt);
         cadat.DATA.ZRshift = fp.z_srch(fp.z_opt);
+        % Get the center values
+        cadat.DATA.centvalX = fp.centvalX;
+        cadat.DATA.centvalY = fp.centvalY;
+        cadat.DATA.centvalZ = fp.centvalZ;
+        % Get the median and rotation values
+        fp = load([cadat.DIR.savefiles,cadat.SHIFT.optrotfile]);
+        cadat.DATA.rot_optX = fp.rot_optX;
+        cadat.DATA.rot_optY = fp.rot_optY;
+        cadat.DATA.rot_optZ = fp.rot_optZ;
+        cadat.DATA.medX = fp.medX;
+        cadat.DATA.medY = fp.medY;
+        cadat.DATA.medZ = fp.medZ;
         fprintf('completed successfully')
     end
 
@@ -1249,6 +1467,30 @@ for vnum = cadat.TIME.ts:1:cadat.TIME.te
             yf = yc + yshift*cadat.STL.dy;
             zf = zc + zshift*cadat.STL.dz;
             
+            % Adjust based on rotation
+            xf = xf - cadat.DATA.medX;
+            yf = yf - cadat.DATA.medY;
+            zf = zf - cadat.DATA.medZ;
+            cXYZ = [xf';yf';zf'];
+            % X rotation
+            % Get the X rotation matrix
+            rotmat = rotx(cadat.DATA.rot_optX);
+            % Administer the X rotation
+            cXYZ_rotX = rotmat*cXYZ;
+            % Get the X rotation matrix
+            rotmat = roty(cadat.DATA.rot_optY);
+            % Administer the Y rotation
+            cXYZ_rotXY = rotmat*cXYZ_rotX;
+            % Get the Z rotation matrix
+            rotmat = rotz(cadat.DATA.rot_optZ);
+            % Administer the Z rotation
+            cXYZ_rotXYZ = rotmat*cXYZ_rotXY;
+            
+            % Add back the median value
+            xf = transpose(cXYZ_rotXYZ(1,:)) + cadat.DATA.medX;
+            yf = transpose(cXYZ_rotXYZ(2,:)) + cadat.DATA.medY;
+            zf = transpose(cXYZ_rotXYZ(3,:)) + cadat.DATA.medZ;
+            
             % For each point, determine if it is in the mask or out
             add_ct = 1;
             for zz = 1:1:length(cadat.DATA.x)
@@ -1343,11 +1585,26 @@ for vnum = cadat.TIME.ts:1:cadat.TIME.te
     % user to ensure everything is running correctly to prevent the whole
     % code form running incorrectly.
     if (vnum == cadat.TIME.ts) || (vnum == cadat.TIME.ts+1)
-        close all;
-        figure(30); subplot(1,2,1); scatter3(cadat.STL.x,cadat.STL.y,cadat.STL.zadj);
-        view(2); set(gca,'FontSize',14); title('STL');
-        subplot(1,2,2); scatter3(cadat.DATA.Xr,cadat.DATA.Yr,cadat.DATA.Zr);
-        view(2); set(gca,'FontSize',14); title('Registered Data');
+        stl_xplot = stl_x;
+        stl_yplot = stl_y;
+        stl_zplot = stl_z;
+        
+        % Plot the data mask with the STL mask
+        % Plot the STL and each velocity field
+        [Xs,Ys,Zs] = meshgrid(stl_x,stl_y,stl_z);
+        stl_mask = cadat.STL.maskf;
+        figure(31); close(gcf);
+        figure(31);
+        vv = double(stl_mask > 0);
+        p2 = patch(isosurface(Xs,Ys,Zs,vv,0));
+        p2.FaceColor = [0.7 0.7 0.7];
+        p2.EdgeColor = 'none';
+        p2.FaceAlpha = 0.2;
+        view(-90,0);
+        
+        hold on; scatter3(cadat.DATA.Xr,cadat.DATA.Yr,cadat.DATA.Zr,4,'filled');
+        view(-90,0); 
+        set(gca,'FontSize',14); title('Registered Data');
         prompt = '\nRegistration is acceptable? [1-Yes, 0-No]: ';
         accept_registration = input(prompt);
         if accept_registration ~= 1
