@@ -98,8 +98,8 @@ cadat.STL.maskfilename = [cadat.STL.stl_save_name,'_STLMask.mat'];
 cadat.OPTIONS.CREATEDATAMASK = 1; % Choose whether to create the data velocity mask or load it
 cadat.VELMASK.velmaskfilename = [cadat.STL.stl_save_name,'_',cadat.FILE.filetype,'_DataMask.mat'];
 cadat.VELMASK.ts = 1; % Starting time for creating the velocity mask
-cadat.VELMASK.te = 2000; % Ending time for creating the velocity mask
-cadat.VELMASK.tstep = 5; % Time step for the velocity mask
+cadat.VELMASK.te = 10; % Ending time for creating the velocity mask
+cadat.VELMASK.tstep = 1; % Time step for the velocity mask
 cadat.STL.filtmaskname = [cadat.STL.stl_save_name,'_',cadat.FILE.filetype,'_STLMask_filt.mat'];
 cadat.VELMASK.filtmaskname = [cadat.STL.stl_save_name,'_',cadat.FILE.filetype,'_DataMask_filt.mat'];
 cadat.OPTIONS.TESTRESOLUTION = 0; % Choose wheter to just test the resolution for mask
@@ -113,6 +113,7 @@ cadat.OPTIONS.TESTRESOLUTION = 0; % Choose wheter to just test the resolution fo
 % analyzed, it will only run it for the 1st time point.
 cadat.OPTIONS.FINDOPTSHIFT = 1; % Choose whether to find the optimal shift or load it
 cadat.SHIFT.optshiftfile = [cadat.STL.stl_save_name,'_',cadat.FILE.filetype,'_optshift.mat'];
+cadat.SHIFT.optrotfile = [cadat.STL.stl_save_name,'_',cadat.FILE.filetype,'_optrot.mat'];
 
 %% VELOCITY REGISTRATION INFOMRATION
 % Masks and registers the active velocity field (current time step)
@@ -131,6 +132,6 @@ cadat.OPTIONS.SAVE_ZEROS_MAT = 0; % Choose whether to save the zero values for a
 
 
 %% RUN THE CODE
-[cadat] = ca_register_vel_to_stl_v2(cadat);
+[cadat] = ca_register_vel_to_stl_v3(cadat);
 
 
